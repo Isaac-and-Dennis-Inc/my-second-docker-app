@@ -1,5 +1,5 @@
-export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskID = number;
+export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type IsoDateString = string; // ISO 8601
 
 export type Task = {

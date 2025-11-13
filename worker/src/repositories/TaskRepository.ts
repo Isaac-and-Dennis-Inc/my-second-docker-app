@@ -2,44 +2,71 @@ import {postgres} from "../postgres.js";
 import {CreateTaskDTO, Task, TaskID, UpdateTaskDTO} from "../types/task.js";
 
 export const TaskRepository = {
-  createOne: async (task: CreateTaskDTO): Promise<Task> => {
+  findById: async (id: TaskID): Promise<Task | null> => {
+    const response = await postgres.query(`
+      SELECT *
+      FROM tasks
+      WHERE id = $1
+    `, [id]);
+
+    return response.rows[0] || null;
+  },
+
+  findAll: async (): Promise<Task[]> => {
+    const response = await postgres.query(`
+      SELECT *
+      FROM tasks
+      ORDER BY created_at DESC
+    `);
+
+    return response.rows;
+  },
+
+  create: async (data: CreateTaskDTO): Promise<Task | null> => {
     const response = await postgres.query(`
         INSERT INTO tasks (title, description, status, due_at)
         VALUES ($1, $2, $3, $4)
         RETURNING *
-      `, [task.title, task.description, task.status, task.due_at]
+      `, [data.title, data.description, data.status, data.due_at]
     )
 
-    return response.rows[0]
+    return response.rows[0] || null;
   },
 
-  updateOne: async (id: TaskID, task: UpdateTaskDTO): Promise<Task> => {
-    const fields = [];
-    const values = [];
+  updateById: async (id: TaskID, data: UpdateTaskDTO): Promise<Task | null> => {
+    const fields: string[] = [];
+    const values: any[] = [];
     let index = 1;
 
-    for (const [key, value] of Object.entries(task)) {
+    for (const key in data) {
+      const value = data[key as keyof UpdateTaskDTO];
+
       fields.push(`${key} = $${index}`);
       values.push(value);
       index++;
     }
 
-    values.push(id);
+    if (fields.length > 0) {
+      values.push(id);
 
-    const query = `
-      UPDATE tasks
-      SET ${fields.join(', ')},
-          updated_at = now()
-      WHERE id = $${index}
-      RETURNING *
-    `;
+      const response = await postgres.query(`
+        UPDATE tasks
+        SET ${fields.join(', ')},
+            updated_at = now()
+        WHERE id = $${index}
+    `, values);
+    }
 
-    const response = await postgres.query(query, values);
-
-    return response.rows[0];
+    return await TaskRepository.findById(id);
   },
 
-  deleteOne: async (id: TaskID): Promise<void> => {
-    await postgres.query('DELETE FROM tasks WHERE id = $1', [id]);
+  deleteById: async (id: TaskID): Promise<boolean> => {
+    const response = await postgres.query(`
+      DELETE
+      FROM tasks
+      WHERE id = $1
+    `, [id]);
+
+    return !!response.rowCount;
   }
 }

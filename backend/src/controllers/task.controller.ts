@@ -1,4 +1,5 @@
-import {JsonController, Get, Delete, Put, Post, Param, Body} from 'routing-controllers';
+import {isNumber} from "class-validator";
+import {Body, Delete, Get, JsonController, Param, Post, Put} from 'routing-controllers';
 import {tasksQueue} from "../queues/tasks.queue.js";
 import {TaskRepository} from "../repositories/TaskRepository.js";
 import {CreateTaskDTO, TaskID, UpdateTaskDTO} from "../types/task.js";
@@ -6,20 +7,24 @@ import {CreateTaskDTO, TaskID, UpdateTaskDTO} from "../types/task.js";
 @JsonController('/task')
 export class TaskController {
   @Get('/:id')
-  async read(@Param('id') id: TaskID) {
-    return TaskRepository.findOne(id)
+  async get(@Param('id') id: TaskID) {
+    if (!isNumber(id)) {
+      throw new Error('Invalid ID');
+    }
+
+    return TaskRepository.findById(id)
   }
 
   @Post('/')
-  async create(@Body() taskData: CreateTaskDTO) {
-    void tasksQueue.add('createTask', taskData);
+  async post(@Body() task: CreateTaskDTO) {
+    void tasksQueue.add('createTask', task);
 
     return null
   }
 
   @Put('/:id')
-  async update(@Body() taskData: UpdateTaskDTO, @Param('id') id: TaskID) {
-    void tasksQueue.add('updateTask', {id, ...taskData});
+  async put(@Param('id') id: TaskID, @Body() task: UpdateTaskDTO) {
+    void tasksQueue.add('updateTask', {id, ...task});
 
     return null
   }
