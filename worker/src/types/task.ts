@@ -14,4 +14,4 @@ export type Task = {
 }
 
 export type CreateTaskDTO = Pick<Task, 'title' | 'description' | 'status' | 'due_at'>;
-export type UpdateTaskDTO = Partial<Pick<Task, 'title' | 'description' | 'status' | 'due_at' | 'completed_at'>>;
+export type UpdateTaskDTO = Partial<Pick<Task, 'title' | 'description' | 'status' | 'due_at'>>;
